@@ -1,0 +1,90 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tsb-kasko-mcp"
+version = "0.1.0"
+description = "MCP server and CLI for the Turkish Insurance Association (TSB) kasko value list, archive and motor vehicle tax data"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [{ name = "hmtkyn" }]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "tsb",
+    "kasko",
+    "insurance",
+    "turkey",
+    "vehicle-valuation",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial",
+]
+dependencies = [
+    "fastmcp>=3.0.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.7.0",
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "openpyxl>=3.1.0",
+]
+
+[project.optional-dependencies]
+http = ["uvicorn>=0.30.0", "starlette>=0.37.0"]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "respx>=0.21.0",
+    "ruff>=0.5.0",
+    "types-openpyxl>=3.1.0",
+    "mypy>=1.10.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/hmtkyn/tsb-kasko-mcp"
+Repository = "https://github.com/hmtkyn/tsb-kasko-mcp"
+Issues = "https://github.com/hmtkyn/tsb-kasko-mcp/issues"
+
+[project.scripts]
+tsb-kasko = "tsb_kasko.cli:main"
+tsb-kasko-mcp = "tsb_kasko.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tsb_kasko"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "D", "ANN", "RUF", "SIM", "C4", "PTH"]
+ignore = ["D203", "D213", "ANN401", "RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "ANN", "E501"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["tsb_kasko"]
+known-local-folder = ["payloads"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
