@@ -1,60 +1,96 @@
-# tsb-kasko-mcp
+# tsb-kasko-mcp — TSB Kasko Değer Listesi için MCP sunucusu ve CLI
 
-Türkiye Sigorta Birliği'nin (TSB) yayımladığı **Kasko Değer Listesi** için tek pakette üç arayüz: **MCP sunucusu**, **komut satırı aracı** ve **Python istemcisi**.
+Türkiye Sigorta Birliği'nin (TSB) yayımladığı **Kasko Değer Listesi**'ni sorgulayan
+açık kaynak **MCP sunucusu**, **komut satırı aracı** ve **Python istemcisi**.
+Claude, ChatGPT, Gemini ve Cursor içinden "2025 model Audi A3'ün kasko bedeli ne
+kadar" diye sorabilir; terminalden `tsb-kasko lookup 2025 "audi a3"` yazabilir ya
+da kendi Python projenizde kütüphane olarak kullanabilirsiniz.
 
-Kasko değer listesi, Türkiye'de satılan her kasko poliçesinin fiyatlandığı referans bedeldir. Aynı zamanda pert ve çalınma durumlarında ödenecek tutarın da dayanağıdır. Bu proje, TSB'nin web sitesinin arka planında kullandığı ve herhangi bir kimlik doğrulaması gerektirmeyen uçları tiplenmiş bir istemciye dönüştürür.
-
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+[![CI](https://github.com/hmtkyn/tsb-kasko-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/hmtkyn/tsb-kasko-mcp/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/)
+[![MCP](https://img.shields.io/badge/MCP-uyumlu-8A2BE2)](https://modelcontextprotocol.io/)
 [![Lisans: MIT](https://img.shields.io/badge/lisans-MIT-green)](LICENSE)
+[![Kapsam](https://img.shields.io/badge/test%20kapsam%C4%B1-%99-brightgreen)](#geliştirme)
+
+Kasko değer listesi, Türkiye'de satılan her kasko poliçesinin fiyatlandığı
+referans bedeldir. Aynı zamanda pert (tam hasar) ve çalınma durumlarında ödenecek
+tutarın da dayanağıdır. Bu proje, TSB'nin web sitesinin arka planında kullandığı
+ve kimlik doğrulaması gerektirmeyen uçları tiplenmiş bir istemciye dönüştürür.
 
 | Arayüz | Nasıl çalıştırılır | Kime göre |
 | --- | --- | --- |
-| MCP sunucusu | `tsb-kasko-mcp` | Claude, ChatGPT, Gemini |
+| MCP sunucusu | `tsb-kasko-mcp` | Claude, ChatGPT, Gemini, Cursor |
 | Komut satırı | `tsb-kasko lookup 2025 "audi a3"` | Terminal, betik, CI |
-| Python istemcisi | `from tsb_kasko import TsbKaskoClient` | Kendi uygulaman |
+| Python istemcisi | `from tsb_kasko import TsbKaskoClient` | Kendi uygulamanız |
 
-Paket kurulduğunda iki komut birden gelir. Ayrı bir CLI paketi kurmanıza gerek yoktur.
+Paket kurulduğunda iki komut birden gelir; ayrı bir CLI paketi kurmanıza gerek yoktur.
+
+## İçindekiler
+
+- [Ne işe yarar](#ne-işe-yarar)
+- [Kurulum](#kurulum)
+- [MCP kurulumu](#mcp-kurulumu)
+- [MCP araçları](#mcp-araçları)
+- [Komut satırı kullanımı](#komut-satırı-kullanımı)
+- [Python kütüphanesi olarak](#python-kütüphanesi-olarak)
+- [Docker](#docker)
+- [Yapılandırma](#yapılandırma)
+- [Kullanılan TSB uçları](#kullanılan-tsb-uçları)
+- [Proje yapısı](#proje-yapısı)
+- [Geliştirme](#geliştirme)
+- [Sık sorulanlar](#sık-sorulanlar)
+- [Sorumluluk reddi](#sorumluluk-reddi)
 
 ## Ne işe yarar
 
-- **Yapay zekâ asistanlarından sorgulama.** Claude, ChatGPT ve Gemini içinden "2025 model Audi A3 Sportback'in kasko bedeli ne kadar" diye sorabilirsiniz.
-- **Terminalden sorgulama.** `tsb-kasko lookup 2025 "audi a3 sportback"` komutu tabloyu, JSON'u veya CSV'yi doğrudan basar.
-- **Poliçedeki araç kodu.** Sonuçlar sigortacının sorduğu `marka kodu - model kodu` ikilisini de içerir, örneğin `9-1616`.
-- **Geçmiş listeler.** TSB her ay listeyi yeniden yayımlar. Geçmiş ayların Excel dosyasını indirebilir veya içinde arama yapabilirsiniz.
-- **Python kütüphanesi.** Kendi projenizde `TsbKaskoClient` sınıfını doğrudan kullanabilirsiniz.
+- **Yapay zekâ asistanından kasko bedeli sorgulama.** Claude, ChatGPT ve Gemini
+  içinden doğal dille sorarsınız, model aracı çağırır, güncel bedeli döner.
+- **Terminalden sorgulama.** `tsb-kasko lookup 2025 "audi a3 sportback"` komutu
+  tabloyu, JSON'u veya CSV'yi doğrudan basar.
+- **Poliçedeki araç kodu.** Sonuçlar sigortacının sorduğu `marka kodu - model kodu`
+  ikilisini de içerir, örneğin `9-1616`.
+- **Geçmiş listeler.** TSB her ay listeyi yeniden yayımlar. Geçmiş ayların Excel
+  dosyasını indirebilir veya içinde arama yapabilirsiniz.
+- **Python kütüphanesi.** Kendi projenizde `TsbKaskoClient` sınıfını doğrudan
+  kullanabilirsiniz.
 
 ## Kurulum
+
+Ön koşul: [uv](https://docs.astral.sh/uv/). Python'u da o kurar.
 
 Kurulum yapmadan denemek için:
 
 ```bash
-uvx --from tsb-kasko-mcp tsb-kasko lookup 2025 "audi a3 sportback"
+uvx --from git+https://github.com/hmtkyn/tsb-kasko-mcp tsb-kasko lookup 2025 "audi a3 sportback"
 ```
 
 Kalıcı kurulum:
 
 ```bash
-uv tool install tsb-kasko-mcp
+uv tool install git+https://github.com/hmtkyn/tsb-kasko-mcp
 ```
 
-veya
+veya pip ile:
 
 ```bash
-pip install tsb-kasko-mcp
+pip install git+https://github.com/hmtkyn/tsb-kasko-mcp
 ```
 
-Depodan geliştirme kurulumu:
+> Paket henüz PyPI'de yayımlanmadı. Yayımlandığında `uv tool install tsb-kasko-mcp`
+> ve `pip install tsb-kasko-mcp` de çalışacak; yayımlama iş akışı depoda hazır.
 
-```bash
-git clone https://github.com/hmtkyn/tsb-kasko-mcp.git
-cd tsb-kasko-mcp
-uv venv
-uv pip install -e ".[dev,http]"
-```
+Depodan geliştirme kurulumu için [Geliştirme](#geliştirme) bölümüne bakın.
 
 ## MCP kurulumu
 
-Sunucu hem `stdio` hem de streamable HTTP taşımasını destekler, bu yüzden üç büyük istemcinin de beklediği biçimde çalışır.
+Sunucu hem `stdio` hem de streamable HTTP taşımasını destekler, bu yüzden hem
+masaüstü istemcileri hem de barındırılan bağlayıcılar için çalışır.
+
+### Claude Code
+
+```bash
+claude mcp add tsb-kasko -- uvx --from git+https://github.com/hmtkyn/tsb-kasko-mcp tsb-kasko-mcp
+```
 
 ### Claude Desktop
 
@@ -65,17 +101,16 @@ Sunucu hem `stdio` hem de streamable HTTP taşımasını destekler, bu yüzden �
   "mcpServers": {
     "tsb-kasko": {
       "command": "uvx",
-      "args": ["--from", "tsb-kasko-mcp", "tsb-kasko-mcp"]
+      "args": ["--from", "git+https://github.com/hmtkyn/tsb-kasko-mcp", "tsb-kasko-mcp"]
     }
   }
 }
 ```
 
-### Claude Code
+### Cursor / VS Code
 
-```bash
-claude mcp add tsb-kasko -- uvx --from tsb-kasko-mcp tsb-kasko-mcp
-```
+`.cursor/mcp.json` veya çalışma alanındaki `.vscode/mcp.json` dosyasına aynı
+`mcpServers` bloğunu ekleyin.
 
 ### Gemini CLI
 
@@ -86,7 +121,7 @@ claude mcp add tsb-kasko -- uvx --from tsb-kasko-mcp tsb-kasko-mcp
   "mcpServers": {
     "tsb-kasko": {
       "command": "uvx",
-      "args": ["--from", "tsb-kasko-mcp", "tsb-kasko-mcp"]
+      "args": ["--from", "git+https://github.com/hmtkyn/tsb-kasko-mcp", "tsb-kasko-mcp"]
     }
   }
 }
@@ -94,7 +129,8 @@ claude mcp add tsb-kasko -- uvx --from tsb-kasko-mcp tsb-kasko-mcp
 
 ### ChatGPT ve diğer uzak istemciler
 
-ChatGPT bağlayıcıları sunucuya HTTP üzerinden ulaşır. Sunucuyu HTTP modunda çalıştırın:
+ChatGPT bağlayıcıları sunucuya HTTP üzerinden ulaşır. Sunucuyu HTTP modunda
+çalıştırın:
 
 ```bash
 TSB_KASKO_TRANSPORT=http TSB_KASKO_HOST=0.0.0.0 TSB_KASKO_PORT=8000 tsb-kasko-mcp
@@ -106,7 +142,8 @@ veya herhangi bir ASGI sunucusuyla:
 uvicorn tsb_kasko.asgi:app --host 0.0.0.0 --port 8000
 ```
 
-Uç nokta varsayılan olarak `http://sunucu:8000/mcp` adresinde yayınlanır.
+Uç nokta varsayılan olarak `http://sunucu:8000/mcp` adresinde yayınlanır. En
+kolay yol için [Docker](#docker) bölümüne bakın.
 
 ## MCP araçları
 
@@ -120,6 +157,9 @@ Uç nokta varsayılan olarak `http://sunucu:8000/mcp` adresinde yayınlanır.
 | `kasko_archive_file` | Belirli bir ayın yayımlanmış Excel dosyasını çözümler. |
 | `kasko_search_archive` | Geçmiş bir ayın listesi içinde arama yapar. |
 | `kasko_download_archive` | Belirli bir ayın Excel dosyasını diske indirir. |
+
+`kasko_download_archive` dışındaki tüm araçlar `readOnlyHint` ile işaretlidir;
+yani istemci onlar için onay istemeden çağrı yapabilir.
 
 ## Komut satırı kullanımı
 
@@ -185,6 +225,26 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+## Docker
+
+Konteyner, MCP sunucusunu HTTP taşımasıyla yayımlar. İki aşamalı derleme kullanır,
+kök olmayan bir kullanıcıyla çalışır ve dosya sistemi salt okunurdur.
+
+```bash
+docker compose up --build
+# -> http://127.0.0.1:8000/mcp
+```
+
+Yalnızca imajı derleyip CLI'yi çalıştırmak için:
+
+```bash
+docker build -f .docker/python/Dockerfile -t tsb-kasko-mcp .
+docker run --rm --entrypoint tsb-kasko tsb-kasko-mcp lookup 2025 "audi a3"
+```
+
+Python sürümü imaja `ARG PYTHON_VERSION` ile sabitlenmiştir ve depodaki
+`.python-version` ile aynı sürümü kullanır.
+
 ## Yapılandırma
 
 Tüm ayarlar ortam değişkenleriyle geçersiz kılınabilir.
@@ -204,7 +264,10 @@ Tüm ayarlar ortam değişkenleriyle geçersiz kılınabilir.
 
 ## Kullanılan TSB uçları
 
-TSB bir API sözleşmesi yayımlamıyor. Aşağıdaki uçlar sitenin ön yüzünün kullandığı, kimlik doğrulaması ve çerez gerektirmeyen uçlardır. Hepsi `src/tsb_kasko/endpoints.py` içinde tek yerde tanımlıdır.
+TSB bir API sözleşmesi yayımlamıyor. Aşağıdaki uçlar sitenin ön yüzünün
+kullandığı, kimlik doğrulaması ve çerez gerektirmeyen uçlardır. Hepsi
+[`src/tsb_kasko/endpoints.py`](src/tsb_kasko/endpoints.py) içinde tek yerde
+tanımlıdır.
 
 | Uç | Parametreler | Döner |
 | --- | --- | --- |
@@ -217,12 +280,17 @@ TSB bir API sözleşmesi yayımlamıyor. Aşağıdaki uçlar sitenin ön yüzün
 
 İki ayrıntı dikkat çekicidir:
 
-1. Marka listesindeki `VehicleBrandCode` alanı her zaman `0` gelir. Poliçede yazan gerçek marka kodu yalnızca `GetInsuranceDatas` yanıtında dolu gelir.
-2. `GetMonthList` içindeki `Id` alanı takvim ayı değildir. Ocak `2`, Ekim ise `1` kimliğine sahiptir. Bu yüzden istemci ay kimliğini hesaplamaz, canlı listeden çözer.
+1. Marka listesindeki `VehicleBrandCode` alanı her zaman `0` gelir. Poliçede
+   yazan gerçek marka kodu yalnızca `GetInsuranceDatas` yanıtında dolu gelir.
+2. `GetMonthList` içindeki `Id` alanı takvim ayı değildir. Ocak `2`, Ekim ise `1`
+   kimliğine sahiptir. Bu yüzden istemci ay kimliğini hesaplamaz, canlı listeden
+   çözer.
 
 ## Proje yapısı
 
-Üç arayüz de aynı çekirdeğin üstünde duran ince kabuklardır. Bu yüzden hepsi tek repoda yaşar: TSB bir ucu yeniden adlandırdığında düzeltme tek dosyada yapılır, üç ayrı sürüm senkronu gerekmez.
+Üç arayüz de aynı çekirdeğin üstünde duran ince kabuklardır. Bu yüzden hepsi tek
+repoda yaşar: TSB bir ucu yeniden adlandırdığında düzeltme tek dosyada yapılır,
+üç ayrı sürüm senkronu gerekmez.
 
 ```
 src/tsb_kasko/
@@ -236,27 +304,91 @@ src/tsb_kasko/
 └── asgi.py        # HTTP taşıması için ASGI uygulaması
 ```
 
-Aynı düzen `github/github-mcp-server`, `microsoft/playwright-mcp` ve `grafana/mcp-grafana` projelerinde de kullanılıyor: ortak çekirdek, üstünde birden fazla giriş noktası.
+Aynı düzen `github/github-mcp-server`, `microsoft/playwright-mcp` ve
+`grafana/mcp-grafana` projelerinde de kullanılıyor: ortak çekirdek, üstünde
+birden fazla giriş noktası.
 
 ## Geliştirme
 
 ```bash
-uv pip install -e ".[dev,http]"
-
-pytest              # 47 test, kayıtlı gerçek yanıtlarla
-ruff check .        # lint
-ruff format .       # biçimlendirme
-mypy src/tsb_kasko  # strict tip denetimi
+git clone https://github.com/hmtkyn/tsb-kasko-mcp.git
+cd tsb-kasko-mcp
+uv sync --all-extras --all-groups
+uv run pre-commit install
 ```
 
-Testler TSB'den alınmış gerçek yanıtların birebir kopyalarını kullanır, bu sayede sözleşme değiştiğinde testler kırılır.
+```bash
+uv run pytest                                  # 146 test, kayıtlı gerçek yanıtlarla
+uv run pytest --cov --cov-report=term-missing  # kapsam raporu
+uv run ruff check .                            # lint
+uv run ruff format .                           # biçimlendirme
+uv run mypy src/tsb_kasko                      # strict tip denetimi
+uv run pre-commit run --all-files              # CI'ın yaptığının tamamı
+```
+
+Testler TSB'den alınmış gerçek yanıtların birebir kopyalarını kullanır, bu sayede
+sözleşme değiştiğinde testler kırılır. Ağa çıkan test yoktur.
+
+### Windows, macOS ve Linux'ta aynı sonuç
+
+Bu depo üç işletim sisteminde de aynı davranacak şekilde ayarlandı:
+
+- [`.python-version`](.python-version) Python sürümünü **3.14**'e sabitler; `uv`
+  gerekirse indirir. Paketin desteklediği aralık ise `>=3.11` ve CI dört sürümü
+  birden test eder.
+- [`.gitattributes`](.gitattributes) her metin dosyasını depoda **LF** ile saklar.
+  Windows'ta `core.autocrlf` açık olsa bile depoya CRLF girmez. CI'da bir adım
+  bunu ayrıca denetler.
+- [`.editorconfig`](.editorconfig) girinti, kodlama ve satır sonunu editörden
+  bağımsız sabitler.
+- [`.devcontainer/`](.devcontainer/) ile hiçbir şey kurmadan konteyner içinde
+  geliştirebilirsiniz.
+
+Ayrıntılar için [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Sık sorulanlar
+
+**Kasko değeri nedir, neye göre belirlenir?**
+TSB'nin her ay yayımladığı, marka ve tip bazında referans araç bedelidir.
+Sigorta şirketleri poliçe primini ve hasar ödemesini bu bedel üzerinden hesaplar.
+
+**Aracımın kasko bedelini nasıl öğrenirim?**
+`tsb-kasko lookup <model_yılı> "<marka ve tip>"` komutunu çalıştırın ya da MCP
+sunucusunu kurup asistanınıza sorun. Resmî kaynak her zaman
+[tsb.org.tr](https://www.tsb.org.tr/tr/kasko-deger-listesi) adresidir.
+
+**Poliçedeki araç kodu nedir?**
+Sigortacının sorduğu `marka kodu - model kodu` ikilisidir, örneğin `9-1616`.
+Sonuçlarda `vehicle_code` alanında döner.
+
+**Hangi model yılları kapsanıyor?**
+2012 ve sonrası. Güncel listeyi `tsb-kasko years` ile görebilirsiniz.
+
+**Geçmiş bir ayın listesine ulaşabilir miyim?**
+Evet. `tsb-kasko archive search 2025 2 --query "sahin"` geçmiş ayın Excel
+dosyasında arar, `archive download` ise dosyanın kendisini indirir.
+
+**Bu proje resmî mi?**
+Hayır. Aşağıdaki sorumluluk reddine bakın.
 
 ## Sorumluluk reddi
 
-Bu proje TSB ile ilişkili değildir ve TSB tarafından desteklenmemektedir. Veriler TSB'nin herkese açık sayfasından alınır. TSB'nin kendi ifadesiyle, bu değerlerin işlemlerde kullanılmasından doğacak sonuçlardan TSB sorumluluk kabul etmemektedir. Resmî kaynak her zaman [tsb.org.tr](https://www.tsb.org.tr/tr/kasko-deger-listesi) adresidir.
+Bu proje TSB ile ilişkili değildir ve TSB tarafından desteklenmemektedir. Veriler
+TSB'nin herkese açık sayfasından alınır. TSB'nin kendi ifadesiyle, bu değerlerin
+işlemlerde kullanılmasından doğacak sonuçlardan TSB sorumluluk kabul etmemektedir.
+Resmî kaynak her zaman [tsb.org.tr](https://www.tsb.org.tr/tr/kasko-deger-listesi)
+adresidir.
 
-Uçlar TSB tarafından belgelenmediği için haber verilmeden değişebilir. Böyle bir durumda `src/tsb_kasko/endpoints.py` dosyasını güncellemek yeterlidir.
+Uçlar TSB tarafından belgelenmediği için haber verilmeden değişebilir. Böyle bir
+durumda [`src/tsb_kasko/endpoints.py`](src/tsb_kasko/endpoints.py) dosyasını
+güncellemek yeterlidir.
 
-## Lisans
+## Katkı ve lisans
 
-[MIT](LICENSE)
+- Katkı rehberi: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Davranış kuralları: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Güvenlik politikası: [SECURITY.md](SECURITY.md)
+- Değişiklik günlüğü: [CHANGELOG.md](CHANGELOG.md)
+
+[MIT](LICENSE) lisansı ile yayımlanmıştır. Türkçe bilgilendirme çevirisi:
+[docs/lisans.md](docs/lisans.md).

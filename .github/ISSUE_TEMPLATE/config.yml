@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Soru sormak istiyorum
+    url: https://github.com/hmtkyn/tsb-kasko-mcp/discussions
+    about: Hata bildirimi değilse tartışmalar bölümünü kullanın.
+  - name: Güvenlik açığı bildirimi
+    url: https://github.com/hmtkyn/tsb-kasko-mcp/security/advisories/new
+    about: Güvenlik açıklarını herkese açık issue olarak açmayın.
+  - name: Resmî kasko değer listesi
+    url: https://www.tsb.org.tr/tr/kasko-deger-listesi
+    about: Verinin doğruluğuyla ilgili sorular TSB'ye aittir.

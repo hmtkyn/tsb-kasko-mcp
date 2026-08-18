@@ -5,28 +5,44 @@ build-backend = "hatchling.build"
 [project]
 name = "tsb-kasko-mcp"
 version = "0.1.0"
-description = "MCP server and CLI for the Turkish Insurance Association (TSB) kasko value list, archive and motor vehicle tax data"
+description = "MCP server and CLI for the TSB Kasko Deger Listesi: Turkish vehicle insurance valuations for Claude, ChatGPT and Gemini"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [{ name = "hmtkyn" }]
 keywords = [
     "mcp",
+    "mcp-server",
     "model-context-protocol",
+    "claude",
+    "chatgpt",
+    "gemini",
+    "llm-tools",
     "tsb",
     "kasko",
+    "kasko-deger-listesi",
+    "kasko-degeri",
+    "sigorta",
     "insurance",
     "turkey",
+    "turkish",
     "vehicle-valuation",
+    "car-insurance",
+    "cli",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
+    "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Turkish",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Office/Business :: Financial",
+    "Typing :: Typed",
 ]
 dependencies = [
     "fastmcp>=3.0.0",
@@ -39,19 +55,25 @@ dependencies = [
 
 [project.optional-dependencies]
 http = ["uvicorn>=0.30.0", "starlette>=0.37.0"]
+
+# PEP 735 group: development tooling, never installed for consumers of the package.
+[dependency-groups]
 dev = [
     "pytest>=8.2.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
     "respx>=0.21.0",
-    "ruff>=0.5.0",
-    "types-openpyxl>=3.1.0",
+    "ruff>=0.16.0",
     "mypy>=1.10.0",
+    "types-openpyxl>=3.1.0",
+    "pre-commit>=4.0.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/hmtkyn/tsb-kasko-mcp"
 Repository = "https://github.com/hmtkyn/tsb-kasko-mcp"
 Issues = "https://github.com/hmtkyn/tsb-kasko-mcp/issues"
+Changelog = "https://github.com/hmtkyn/tsb-kasko-mcp/blob/main/CHANGELOG.md"
 
 [project.scripts]
 tsb-kasko = "tsb_kasko.cli:main"
@@ -60,12 +82,22 @@ tsb-kasko-mcp = "tsb_kasko.server:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/tsb_kasko"]
 
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "README.md", "LICENSE", "CHANGELOG.md"]
+
+[tool.uv]
+# Contributors get the same uv behaviour regardless of what they have installed.
+required-version = ">=0.9.0"
+
 [tool.ruff]
 line-length = 100
+# Matches requires-python, so the linter never suggests syntax 3.11 cannot parse.
 target-version = "py311"
+src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "D", "ANN", "RUF", "SIM", "C4", "PTH"]
+# RUF001-003 flag Turkish characters in strings and comments as ambiguous unicode.
 ignore = ["D203", "D213", "ANN401", "RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.lint.per-file-ignores]
@@ -84,7 +116,26 @@ docstring-code-format = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = ["--strict-markers", "--strict-config", "-ra"]
+filterwarnings = ["error"]
 
 [tool.mypy]
 python_version = "3.11"
 strict = true
+pretty = true
+warn_unreachable = true
+
+[tool.coverage.run]
+source = ["src/tsb_kasko"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 95
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    'if __name__ == "__main__":',
+]

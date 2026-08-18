@@ -1,0 +1,50 @@
+# Every text file is stored with LF in the repository, whatever a contributor's
+# platform or core.autocrlf setting happens to be. This is what keeps a Windows
+# checkout from turning the whole tree into a whitespace-only diff.
+* text=auto eol=lf
+
+# Explicit declarations, so the text/binary heuristic never has to guess.
+*.py            text eol=lf diff=python
+*.pyi           text eol=lf diff=python
+*.toml          text eol=lf
+*.cfg           text eol=lf
+*.ini           text eol=lf
+*.json          text eol=lf
+*.md            text eol=lf diff=markdown
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.sh            text eol=lf
+*.txt           text eol=lf
+Dockerfile      text eol=lf
+.editorconfig   text eol=lf
+.gitattributes  text eol=lf
+.gitignore      text eol=lf
+.python-version text eol=lf
+LICENSE         text eol=lf
+
+# Windows-only scripts break when checked out with LF, so they keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary payloads: never rewrite line endings, never attempt a textual diff.
+*.xlsx binary
+*.xls  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.gz   binary
+
+# Generated, so keep it out of diffs and out of GitHub's language statistics.
+uv.lock linguist-generated=true -diff
+
+# Tooling and CI scaffolding does not belong in `git archive` tarballs.
+/.devcontainer/ export-ignore
+/.docker/       export-ignore
+/.github/       export-ignore
+/.editorconfig  export-ignore
+/.gitattributes export-ignore

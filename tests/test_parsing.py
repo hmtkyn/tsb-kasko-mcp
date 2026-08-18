@@ -12,6 +12,7 @@ from tsb_kasko.parsing import (
     parse_amount,
     split_terms,
     unwrap,
+    unwrap_list,
 )
 
 
@@ -77,3 +78,34 @@ def test_matches_all_terms_requires_every_term() -> None:
     haystack = fold("AUDI A3 SPORTBACK 35 TFSI")
     assert matches_all_terms(haystack, ["audi", "sportback"])
     assert not matches_all_terms(haystack, ["audi", "avant"])
+
+
+def test_unwrap_list_returns_the_records() -> None:
+    assert unwrap_list({"HasError": False, "Result": [{"Id": 1}]}) == [{"Id": 1}]
+
+
+def test_unwrap_list_treats_a_null_result_as_empty() -> None:
+    assert unwrap_list({"HasError": False, "Result": None}) == []
+
+
+def test_unwrap_list_rejects_a_scalar_result() -> None:
+    with pytest.raises(TsbParseError):
+        unwrap_list({"HasError": False, "Result": 42})
+
+
+def test_unwrap_list_propagates_a_service_error() -> None:
+    with pytest.raises(TsbServiceError):
+        unwrap_list({"HasError": True, "Message": "Bakim calismasi"})
+
+
+@pytest.mark.parametrize("raw", ["-", ",", ".", "abc", "..--"])
+def test_parse_amount_returns_zero_for_uninterpretable_text(raw: str) -> None:
+    assert parse_amount(raw) == 0.0
+
+
+def test_parse_amount_reads_a_currency_suffix() -> None:
+    assert parse_amount("3.695.439,00 TL") == 3695439.0
+
+
+def test_format_amount_round_trips_through_parse_amount() -> None:
+    assert parse_amount(format_amount(1234567.89)) == 1234567.89

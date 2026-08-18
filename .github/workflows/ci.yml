@@ -10,30 +10,33 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+permissions:
+  contents: read
 
+env:
+  # Keep in step with .python-version and the Dockerfile ARG.
+  DEFAULT_PYTHON: "3.14"
+  UV_VERSION: "0.11.33"
+
+jobs:
+  quality:
+    name: Lint, format and types
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10
         with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.DEFAULT_PYTHON }}
           enable-cache: true
 
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
       - name: Install the project
-        run: uv sync --all-extras
+        run: uv sync --locked --all-extras --all-groups
 
       - name: Lint
-        run: uv run ruff check .
+        run: uv run ruff check --output-format=github .
 
       - name: Check formatting
         run: uv run ruff format --check .
@@ -41,5 +44,70 @@ jobs:
       - name: Type check
         run: uv run mypy src/tsb_kasko
 
+      - name: Verify every tracked text file is stored with LF
+        run: |
+          offenders=$(git ls-files --eol | grep -E '^i/(crlf|mixed)' || true)
+          if [ -n "$offenders" ]; then
+            echo "$offenders"
+            echo "::error::Files above are stored with CRLF. See .gitattributes; run 'git add --renormalize .'"
+            exit 1
+          fi
+
+  test:
+    name: Test ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        # The package is pure Python, so only the pinned version is worth
+        # running on the other two platforms.
+        include:
+          - os: macos-latest
+            python-version: "3.14"
+          - os: windows-latest
+            python-version: "3.14"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Install the project
+        run: uv sync --locked --all-extras --all-groups
+
       - name: Test
-        run: uv run pytest -q
+        run: uv run pytest --cov --cov-report=term-missing --cov-report=xml
+
+      - name: Smoke test the console scripts
+        run: |
+          uv run tsb-kasko --version
+          uv run tsb-kasko --help
+
+  docker:
+    name: Build the container image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .docker/python/Dockerfile
+          push: false
+          load: true
+          tags: tsb-kasko-mcp:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify the image runs
+        run: docker run --rm --entrypoint tsb-kasko tsb-kasko-mcp:ci --version

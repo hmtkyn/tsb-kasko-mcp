@@ -7,6 +7,7 @@ import pytest
 import respx
 
 from tsb_kasko.client import TsbKaskoClient
+from tsb_kasko.config import Settings
 from tsb_kasko.exceptions import TsbNotFoundError, TsbParseError, TsbRequestError, TsbServiceError
 
 from payloads import (
@@ -203,3 +204,106 @@ async def test_reference_data_is_cached(client: TsbKaskoClient) -> None:
     await client.list_brands(2025)
     await client.list_brands(2025)
     assert route.call_count == 1
+
+
+@respx.mock
+async def test_connection_errors_are_retried_then_wrapped(settings: Settings) -> None:
+    settings.max_retries = 3
+    route = respx.get(f"{BASE_URL}/InsuranceData/GetVehicleYearList").mock(
+        side_effect=httpx.ConnectError("network down")
+    )
+    async with httpx.AsyncClient(base_url=BASE_URL) as http_client:
+        client = TsbKaskoClient(settings, http_client=http_client)
+        with pytest.raises(TsbRequestError):
+            await client.list_model_years()
+    assert route.call_count == 3
+
+
+@respx.mock
+async def test_a_retryable_status_is_retried_before_succeeding(settings: Settings) -> None:
+    settings.max_retries = 3
+    route = respx.get(f"{BASE_URL}/InsuranceData/GetVehicleYearList").mock(
+        side_effect=[
+            httpx.Response(503),
+            httpx.Response(200, json=YEAR_LIST_PAYLOAD),
+        ]
+    )
+    async with httpx.AsyncClient(base_url=BASE_URL) as http_client:
+        years = await TsbKaskoClient(settings, http_client=http_client).list_model_years()
+    assert route.call_count == 2
+    assert years[0] == 2026
+
+
+@respx.mock
+async def test_a_client_error_is_not_retried(settings: Settings) -> None:
+    settings.max_retries = 3
+    route = respx.get(f"{BASE_URL}/InsuranceData/GetVehicleYearList").mock(
+        return_value=httpx.Response(404)
+    )
+    async with httpx.AsyncClient(base_url=BASE_URL) as http_client:
+        client = TsbKaskoClient(settings, http_client=http_client)
+        with pytest.raises(TsbRequestError) as error:
+            await client.list_model_years()
+    assert route.call_count == 1
+    assert error.value.status_code == 404
+
+
+@respx.mock
+async def test_missing_valuation_raises_not_found(client: TsbKaskoClient) -> None:
+    # TSB answers with a null Result rather than an error for an unpriced model.
+    respx.get(f"{BASE_URL}/InsuranceData/GetInsuranceDatas").mock(
+        return_value=httpx.Response(200, json={"HasError": False, "Message": "", "Result": None})
+    )
+    with pytest.raises(TsbNotFoundError):
+        await client.get_kasko_value(2025, 999999)
+
+
+@respx.mock
+async def test_resolve_month_id_raises_for_an_unpublished_month(client: TsbKaskoClient) -> None:
+    respx.get(f"{BASE_URL}/InsuranceData/GetMonthList").mock(
+        return_value=httpx.Response(200, json=MONTH_LIST_PAYLOAD)
+    )
+    # The recorded payload omits July, mirroring a month TSB has not published.
+    with pytest.raises(TsbNotFoundError):
+        await client.resolve_month_id(7)
+
+
+@respx.mock
+async def test_a_failing_brand_does_not_abort_the_whole_search(client: TsbKaskoClient) -> None:
+    respx.get(f"{BASE_URL}/InsuranceData/GetVehicleBrandList").mock(
+        return_value=httpx.Response(200, json=BRAND_LIST_PAYLOAD)
+    )
+    respx.get(f"{BASE_URL}/InsuranceData/GetVehicleModelList").mock(
+        side_effect=[httpx.Response(500)] + [httpx.Response(200, json=MODEL_LIST_PAYLOAD)] * 8
+    )
+    # Four brands still answer, so the search returns their matches instead of failing.
+    assert await client.search_models(2025, "a3 sportback")
+
+
+@respx.mock
+async def test_an_unpriced_match_is_dropped_from_the_lookup(client: TsbKaskoClient) -> None:
+    respx.get(f"{BASE_URL}/InsuranceData/GetVehicleBrandList").mock(
+        return_value=httpx.Response(200, json=BRAND_LIST_PAYLOAD)
+    )
+    respx.get(f"{BASE_URL}/InsuranceData/GetVehicleModelList").mock(
+        return_value=httpx.Response(200, json=MODEL_LIST_PAYLOAD)
+    )
+    respx.get(f"{BASE_URL}/InsuranceData/GetInsuranceDatas").mock(
+        return_value=httpx.Response(200, json={"HasError": False, "Message": "", "Result": None})
+    )
+    assert await client.lookup(2025, "audi a3 sportback") == []
+
+
+async def test_an_injected_http_client_is_left_open(settings: Settings) -> None:
+    async with httpx.AsyncClient(base_url=BASE_URL) as http_client:
+        async with TsbKaskoClient(settings, http_client=http_client):
+            pass
+        # The caller owns the injected client, so exiting the context must not close it.
+        assert not http_client.is_closed
+
+
+async def test_an_owned_http_client_is_closed_on_exit(settings: Settings) -> None:
+    client = TsbKaskoClient(settings)
+    async with client:
+        pass
+    assert client._http.is_closed

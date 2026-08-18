@@ -1,17 +1,43 @@
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 build/
 dist/
+.eggs/
+
+# Environments
 .venv/
 venv/
 .env
+.env.*
+!.env.example
+
+# Tooling caches
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+.nox/
+.tox/
+
+# Coverage
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
-uv.lock
+
+# Local response cache and downloaded spreadsheets
 .cache/
 *.xlsx
 !tests/fixtures/*.xlsx
+
+# Editors and operating systems
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+
+# Machine-local agent settings
+.claude/settings.local.json

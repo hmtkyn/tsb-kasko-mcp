@@ -1,0 +1,42 @@
+name: TSB ucu değişti
+description: TSB bir uç noktayı, parametreyi veya yanıt biçimini değiştirdi.
+title: "fix: TSB ucu değişti — "
+labels: ["hata", "tsb-ucu"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        TSB bir API sözleşmesi yayımlamıyor, bu yüzden uçlar haber verilmeden
+        değişebilir. Bu şablon o durum için.
+
+  - type: input
+    id: uc
+    attributes:
+      label: Etkilenen uç
+      placeholder: "/InsuranceData/GetVehicleModelList"
+    validations:
+      required: true
+
+  - type: textarea
+    id: istek
+    attributes:
+      label: Gerçek istek
+      description: Tarayıcının ağ sekmesinden kopyaladığınız isteği yapıştırın.
+      render: http
+    validations:
+      required: true
+
+  - type: textarea
+    id: yanit
+    attributes:
+      label: Gerçek yanıt
+      description: Yanıtın ilk birkaç kaydı yeterli.
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: fark
+    attributes:
+      label: Ne değişmiş görünüyor?
+      placeholder: "Alan adı VehicleModelId iken ModelId olmuş."

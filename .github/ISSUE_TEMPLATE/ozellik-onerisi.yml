@@ -1,0 +1,39 @@
+name: Özellik önerisi
+description: Yeni bir araç, komut veya davranış önerin.
+title: "feat: "
+labels: ["öneri"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Hangi ihtiyaçtan doğuyor?
+      description: Çözmek istediğiniz somut durumu anlatın; çözümü değil.
+    validations:
+      required: true
+
+  - type: textarea
+    id: cozum
+    attributes:
+      label: Önerdiğiniz çözüm
+    validations:
+      required: true
+
+  - type: dropdown
+    id: arayuz
+    attributes:
+      label: Hangi arayüzü ilgilendiriyor?
+      options:
+        - MCP sunucusu
+        - Komut satırı (tsb-kasko)
+        - Python kütüphanesi
+        - Docker
+        - Belgeler
+      multiple: true
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatifler
+    attributes:
+      label: Denediğiniz alternatifler
+      description: Şu anki sürümle bu ihtiyacı nasıl karşılıyorsunuz?

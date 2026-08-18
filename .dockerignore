@@ -1,0 +1,36 @@
+# Keep the build context small and reproducible: everything the image needs is
+# pyproject.toml, uv.lock and src/.
+.git/
+.github/
+.devcontainer/
+.claude/
+.venv/
+venv/
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.nox/
+.tox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+.cache/
+*.xlsx
+
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Documentation does not affect the built package.
+*.md
+!README.md

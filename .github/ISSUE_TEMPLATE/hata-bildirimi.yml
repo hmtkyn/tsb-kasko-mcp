@@ -1,0 +1,83 @@
+name: Hata bildirimi
+description: Beklenmedik bir davranış veya çöken bir komut bildirin.
+title: "fix: "
+labels: ["hata"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Teşekkürler. Bir güvenlik açığı bildiriyorsanız burayı değil,
+        [güvenlik politikasını](https://github.com/hmtkyn/tsb-kasko-mcp/blob/main/SECURITY.md)
+        kullanın.
+
+  - type: dropdown
+    id: arayuz
+    attributes:
+      label: Hangi arayüzde görüldü?
+      options:
+        - MCP sunucusu
+        - Komut satırı (tsb-kasko)
+        - Python kütüphanesi
+        - Docker
+      multiple: true
+    validations:
+      required: true
+
+  - type: textarea
+    id: ne-oldu
+    attributes:
+      label: Ne oldu?
+      description: Beklediğiniz ile karşılaştığınız davranışı yazın.
+    validations:
+      required: true
+
+  - type: textarea
+    id: adimlar
+    attributes:
+      label: Yeniden üretme adımları
+      description: Çalıştırdığınız komutu veya MCP araç çağrısını olduğu gibi yapıştırın.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: cikti
+    attributes:
+      label: Hata çıktısı
+      description: Varsa tam hata metnini ekleyin.
+      render: shell
+
+  - type: input
+    id: surum
+    attributes:
+      label: Paket sürümü
+      description: "`tsb-kasko --version` çıktısı."
+      placeholder: "tsb-kasko 0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python sürümü
+      placeholder: "3.14.6"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: isletim-sistemi
+    attributes:
+      label: İşletim sistemi
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+
+  - type: input
+    id: istemci
+    attributes:
+      label: MCP istemcisi
+      description: MCP ile ilgiliyse hangi istemciyi kullanıyorsunuz?
+      placeholder: "Claude Desktop, Claude Code, Gemini CLI, ChatGPT bağlayıcısı..."
