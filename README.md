@@ -10,7 +10,7 @@ da kendi Python projenizde kütüphane olarak kullanabilirsiniz.
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/)
 [![MCP](https://img.shields.io/badge/MCP-uyumlu-8A2BE2)](https://modelcontextprotocol.io/)
 [![Lisans: MIT](https://img.shields.io/badge/lisans-MIT-green)](LICENSE)
-[![Kapsam](https://img.shields.io/badge/test%20kapsam%C4%B1-%99-brightgreen)](#geliştirme)
+[![Test kapsamı](https://img.shields.io/badge/test%20kapsam%C4%B1-98%25-brightgreen)](#geliştirme)
 
 Kasko değer listesi, Türkiye'de satılan her kasko poliçesinin fiyatlandığı
 referans bedeldir. Aynı zamanda pert (tam hasar) ve çalınma durumlarında ödenecek
