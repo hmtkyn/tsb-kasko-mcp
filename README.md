@@ -1,11 +1,19 @@
 # tsb-kasko-mcp
 
-Türkiye Sigorta Birliği'nin (TSB) yayımladığı **Kasko Değer Listesi** için MCP sunucusu, komut satırı aracı ve Python istemcisi.
+Türkiye Sigorta Birliği'nin (TSB) yayımladığı **Kasko Değer Listesi** için tek pakette üç arayüz: **MCP sunucusu**, **komut satırı aracı** ve **Python istemcisi**.
 
 Kasko değer listesi, Türkiye'de satılan her kasko poliçesinin fiyatlandığı referans bedeldir. Aynı zamanda pert ve çalınma durumlarında ödenecek tutarın da dayanağıdır. Bu proje, TSB'nin web sitesinin arka planında kullandığı ve herhangi bir kimlik doğrulaması gerektirmeyen uçları tiplenmiş bir istemciye dönüştürür.
 
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![Lisans: MIT](https://img.shields.io/badge/lisans-MIT-green)](LICENSE)
+
+| Arayüz | Nasıl çalıştırılır | Kime göre |
+| --- | --- | --- |
+| MCP sunucusu | `tsb-kasko-mcp` | Claude, ChatGPT, Gemini |
+| Komut satırı | `tsb-kasko lookup 2025 "audi a3"` | Terminal, betik, CI |
+| Python istemcisi | `from tsb_kasko import TsbKaskoClient` | Kendi uygulaman |
+
+Paket kurulduğunda iki komut birden gelir. Ayrı bir CLI paketi kurmanıza gerek yoktur.
 
 ## Ne işe yarar
 
@@ -211,6 +219,24 @@ TSB bir API sözleşmesi yayımlamıyor. Aşağıdaki uçlar sitenin ön yüzün
 
 1. Marka listesindeki `VehicleBrandCode` alanı her zaman `0` gelir. Poliçede yazan gerçek marka kodu yalnızca `GetInsuranceDatas` yanıtında dolu gelir.
 2. `GetMonthList` içindeki `Id` alanı takvim ayı değildir. Ocak `2`, Ekim ise `1` kimliğine sahiptir. Bu yüzden istemci ay kimliğini hesaplamaz, canlı listeden çözer.
+
+## Proje yapısı
+
+Üç arayüz de aynı çekirdeğin üstünde duran ince kabuklardır. Bu yüzden hepsi tek repoda yaşar: TSB bir ucu yeniden adlandırdığında düzeltme tek dosyada yapılır, üç ayrı sürüm senkronu gerekmez.
+
+```
+src/tsb_kasko/
+├── client.py      # çekirdek: HTTP, yeniden deneme, önbellek
+├── endpoints.py   # TSB uçlarının tek tanım yeri
+├── models.py      # Pydantic modelleri
+├── parsing.py     # zarf açma, Türkçe sayı ve metin normalleştirme
+├── archive.py     # aylık Excel listelerinin okuyucusu
+├── server.py      # kabuk 1: FastMCP sunucusu
+├── cli.py         # kabuk 2: Typer komut satırı
+└── asgi.py        # HTTP taşıması için ASGI uygulaması
+```
+
+Aynı düzen `github/github-mcp-server`, `microsoft/playwright-mcp` ve `grafana/mcp-grafana` projelerinde de kullanılıyor: ortak çekirdek, üstünde birden fazla giriş noktası.
 
 ## Geliştirme
 
