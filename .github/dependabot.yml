@@ -7,6 +7,7 @@ updates:
     groups:
       python-dev-tooling:
         patterns: ["ruff", "mypy", "pytest*", "respx", "pre-commit", "types-*"]
+    labels: ["bağımlılıklar"]
     commit-message:
       prefix: "chore(deps)"
 
@@ -14,6 +15,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    labels: ["bağımlılıklar"]
     commit-message:
       prefix: "chore(ci)"
 
@@ -21,5 +23,6 @@ updates:
     directory: "/.docker/python"
     schedule:
       interval: "weekly"
+    labels: ["bağımlılıklar", "docker"]
     commit-message:
       prefix: "chore(docker)"
